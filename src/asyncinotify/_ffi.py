@@ -9,7 +9,7 @@
 
 import os
 
-if os.uname().sysname.lower() == 'linux' and os.environ.get('READTHEDOCS', 'false').lower() != 'true':
+if (os.uname().sysname.lower() == 'linux' or os.uname().sysname.lower() == 'freebsd') and os.environ.get('READTHEDOCS', 'false').lower() != 'true'):
     import ctypes
     import ctypes.util
 
@@ -23,7 +23,20 @@ if os.uname().sysname.lower() == 'linux' and os.environ.get('READTHEDOCS', 'fals
                 # name follows, and is of a variable size
             ]
 
+    def load_inotify_lib():
+        libc_path = ctypes.util.find_library("c")
+        if libc_path:
+            libc = ctypes.CDLL(libc_path)
+            if hasattr(libc, "inotify_init"):
+                return libc_path
 
+        # Fallback: FreeBSD <= 14
+        inotify_path = ctypes.util.find_library("inotify")
+        if inotify_path:
+            return inotify_path
+
+        raise RuntimeError("inotify support was not found")    
+    
     def check_return(value: int) -> int:
         if value == -1:
             errno = ctypes.get_errno()
@@ -36,7 +49,7 @@ if os.uname().sysname.lower() == 'linux' and os.environ.get('READTHEDOCS', 'fals
 
     # May be None, which will work fine anyway if the program is linked dynamically
     # against an appropriate libc.
-    _libcname = ctypes.util.find_library('c')
+    _libcname = load_inotify_lib()
     libc = ctypes.CDLL(_libcname, use_errno=True)
 
     libc.inotify_init.restype = check_return
@@ -49,4 +62,4 @@ if os.uname().sysname.lower() == 'linux' and os.environ.get('READTHEDOCS', 'fals
     libc.inotify_rm_watch.argtypes = (ctypes.c_int, ctypes.c_int)
 else:
     import warnings
-    warnings.warn('inotify is a Linux-only API.  You can package this library on other platforms, but not run it.')
+    warnings.warn('inotify is a Linux and FreeBSD API.  You can package this library on other platforms, but not run it.')
