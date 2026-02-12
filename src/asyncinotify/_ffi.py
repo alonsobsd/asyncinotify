@@ -9,7 +9,7 @@
 
 import os
 
-if (os.uname().sysname.lower() == 'linux' or os.uname().sysname.lower() == 'freebsd') and os.environ.get('READTHEDOCS', 'false').lower() != 'true'):
+if (os.uname().sysname.lower() == 'linux' or os.uname().sysname.lower() == 'freebsd') and os.environ.get('READTHEDOCS', 'false').lower() != 'true':
     import ctypes
     import ctypes.util
 
